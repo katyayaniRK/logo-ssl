@@ -122,6 +122,60 @@ pip install -q lightning einops editdistance \
     opencv-python matplotlib typer beautifulsoup4 lxml
 ```
 ### Step 3 — Apply Compatibility Fixes
+**Fix 1 — Replace pytorch_lightning imports (incompatible with Python 3.12):**
+ 
+```python
+import os
+for root, dirs, files in os.walk('comer'):
+    for file in files:
+        if file.endswith('.py'):
+            fpath = os.path.join(root, file)
+            with open(fpath, 'r') as f:
+                content = f.read()
+            if 'pytorch_lightning' in content:
+                content = content.replace('import pytorch_lightning',
+                                          'import lightning.pytorch')
+                content = content.replace('from pytorch_lightning',
+                                          'from lightning.pytorch')
+                with open(fpath, 'w') as f:
+                    f.write(content)
+print('Imports fixed!')
+```
+ 
+**Fix 2 — Fix missing dictionary file in vocab.py:**
+ 
+```python
+with open('comer/datamodule/vocab.py', 'r') as f:
+    content = f.read()
+content = content.replace('IIIT_Dict.txt', 'SSL_HWD_Dict.txt')
+with open('comer/datamodule/vocab.py', 'w') as f:
+    f.write(content)
+print('vocab.py fixed!')
+```
+ 
+**Fix 3 — Rewrite train.py for Lightning 2.x:**
+ 
+```python
+new_train = """
+import sys
+sys.path.insert(0, '/content/LoGoHTR')  # update path for your environment
+ 
+from lightning.pytorch.cli import LightningCLI
+from comer.datamodule import CROHMEDatamodule
+from comer.lit_comer import LitCoMER
+ 
+cli = LightningCLI(
+    LitCoMER,
+    CROHMEDatamodule,
+    save_config_kwargs={'overwrite': True},
+)
+"""
+with open('train.py', 'w') as f:
+    f.write(new_train)
+print('train.py fixed!')
+```
+ 
+---
 ## 🏋️ Training
  
 ### Step 1 — Download Pretrained SSL Backbone
